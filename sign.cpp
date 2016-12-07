@@ -116,6 +116,30 @@ char* base64(const void *input, int length)
     return buff;
 }
 
+char *Base64Encode(const char *input, int length, bool with_new_line) {
+    BIO * bmem = NULL;
+    BIO * b64 = NULL;
+    BUF_MEM * bptr = NULL;
+
+    b64 = BIO_new(BIO_f_base64());
+    if(!with_new_line) {
+        BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    }
+    bmem = BIO_new(BIO_s_mem());
+    b64 = BIO_push(b64, bmem);
+    BIO_write(b64, input, length);
+    BIO_flush(b64);
+    BIO_get_mem_ptr(b64, &bptr);
+
+    char * buff = (char *)malloc(bptr->length + 1);
+    memcpy(buff, bptr->data, bptr->length);
+    buff[bptr->length] = 0;
+
+    BIO_free_all(b64);
+
+    return buff;
+}
+
 
 static std::string sign(const char *private_key,
                         const std::string &content) {
@@ -194,7 +218,8 @@ static std::string sign(const char *private_key,
     //signStr = common_tool::base64_encode((const unsigned char*)sign, size);
     //std::cout << sign;
     //signStr = base64((const unsigned char*)sign, size);
-    signStr = b64_encode((const unsigned char*)sign, size);
+    //signStr = b64_encode((const unsigned char*)sign, size);
+    signStr = Base64Encode(sign, size, false);
     EVP_MD_CTX_cleanup(&ctx);
     free(sign);
 
@@ -222,8 +247,9 @@ int main(int argc, char *argv[])
 {
     std::cout << sign("", "data to sign") << std::endl;
     //sign("", "data to sign");
-    //std::string hello = "helloworld";
+    std::string hello = "helloworld";
     //std::cout << base64((void*)hello.c_str(), hello.length()) << std::endl;
     //std::cout << b64_encode((const unsigned char*)hello.c_str(), hello.length()) << std::endl;
+    std::cout << Base64Encode(hello.c_str(), hello.length(), false) << std::endl;
     return 0;
 }
